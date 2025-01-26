@@ -8,6 +8,7 @@ import {
 } from "../utils/cloudinary.js";
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
+import { Subscription } from "../models/subscription.models.js";
 
 //checked
 const registerUser = asyncHandler(async (req, res) => {
@@ -73,9 +74,28 @@ const registerUser = asyncHandler(async (req, res) => {
       throw new ApiErrorResponse(500, "Something went wrong");
     }
 
+    const channel = await Subscription.create({
+      channel: user._id,
+    });
+
+    if (!channel) {
+      throw new ApiErrorResponse(
+        500,
+        "Something went wrong while creating channel"
+      );
+    }
+
+    user.$addFields;
     res
       .status(201)
-      .json(new ApiResponse(200, "OK", "User registered successfully", user)); //200 is the status code for success
+      .json(
+        new ApiResponse(
+          200,
+          "OK",
+          "User registered successfully and channel created",
+          user
+        )
+      ); //200 is the status code for success
   } catch (error) {
     console.log("User creation failed");
 
@@ -348,7 +368,7 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
 
 //check after writing a channel
 const getUserChannelProfile = asyncHandler(async (req, res) => {
-  const { username } = req.params;
+  const { username } = req.params || req.query;
 
   if (!username?.trim()) {
     throw new ApiErrorResponse(400, "Username is required");
@@ -387,7 +407,9 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
         isSubscribed: {
           //if is subscribed or not
           $cond: {
-            if: { $in: [req.user?._id, "$subscribers.subscriber"] },
+            if: {
+              $in: [req.user?._id, ["$Subscription.subscriber"]],
+            },
             then: true,
             else: false,
           },
@@ -399,7 +421,7 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
         fullName: 1,
         username: 1,
         subscribersCount: 1,
-        channelsSubscribedToCount: 1,
+        subscribedChannelsCount: 1,
         isSubscribed: 1,
         avatar: 1,
         coverImage: 1,

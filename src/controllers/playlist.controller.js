@@ -8,6 +8,15 @@ const createPlaylist = asyncHandler(async (req, res) => {
   const { name, description } = req.body;
 
   //TODO: create playlist
+  if (!name || !description) {
+    throw new ApiError(400, "Name and description are required");
+  }
+
+  const playlist = await Playlist.create({
+    name,
+    description,
+    owner: req.user._id,
+  });
 });
 
 const getUserPlaylists = asyncHandler(async (req, res) => {
